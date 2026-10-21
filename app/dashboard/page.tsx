@@ -18,15 +18,27 @@ export default function DashboardPage() {
   const [connectionStatus, setConnectionStatus] = useState<"connecting" | "connected" | "disconnected">("connecting")
   const [lastSync, setLastSync] = useState<string>("")
   const eventSourceRef = useRef<EventSource | null>(null)
+const fetchOrders = async () => {
+  try {
+    const res = await fetch("/api/orders");
+    
+    // 1. Read the stream ONLY ONCE
+    const data = await res.json();
+    console.log("Fetched order data:", data); // Fixed empty log
 
-  const fetchOrders = async () => {
-    const res = await fetch("/api/orders")
     if (res.ok) {
-      const data = await res.json()
-      setOrders(data.orders)
+      // 2. Use the "data" variable we already extracted
+      setOrders(Array.isArray(data) ? data : data.orders || []);
+    } else {
+      console.error("Server returned an error:", data.message || res.statusText);
     }
-    setLoading(false)
+  } catch (error) {
+    console.error("Failed to fetch orders:", error);
+  } finally {
+    setLoading(false); // Keeps loading safe even if fetch crashes
   }
+};
+
 
   const connectSSE = () => {
     if (eventSourceRef.current) eventSourceRef.current.close()
